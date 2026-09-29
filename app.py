@@ -1,11 +1,16 @@
 from flask import Flask, request, render_template, send_file
 from io import BytesIO
 import base64
+import uuid
 import cv2
 import numpy as np
 import edge_stego as E
 
 app = Flask(__name__)
+
+# Temporary in-memory storage for generated stego files.
+# This avoids sending the entire PNG through a hidden HTML form field.
+STEGO_FILES = {}
 
 
 def image_from_upload(data):
@@ -101,6 +106,13 @@ def embed():
         ssim_value = E.ssim(cover, stego)
 
         # Return all demonstration information to the browser.
+        ok, stego_encoded = cv2.imencode(".png", stego)
+        if not ok:
+            raise ValueError("Could not encode stego image as PNG.")
+
+        stego_token = uuid.uuid4().hex
+        STEGO_FILES[stego_token] = stego_encoded.tobytes()
+
         result = {
             "W": W,
             "H": H,
@@ -121,7 +133,7 @@ def embed():
             "ssim": ssim_value,
             "edge_map": png_data_uri(edge_img),
             "montage": png_data_uri(montage),
-            "stego": png_data_uri(stego),
+            "stego_token": stego_token,
         }
 
         return render_template("index.html", embed_result=result)
@@ -130,22 +142,21 @@ def embed():
         return render_template("index.html", error=f"Embedding failed: {e}")
 
 
-@app.route("/download-stego", methods=["POST"])
-def download_stego():
-    try:
-        image_b64 = request.form.get("stego_data", "")
-        if not image_b64.startswith("data:image/png;base64,"):
-            raise ValueError("Invalid stego image data.")
-
-        raw = base64.b64decode(image_b64.split(",", 1)[1])
-        return send_file(
-            BytesIO(raw),
-            mimetype="image/png",
-            as_attachment=True,
-            download_name="stego.png"
+@app.route("/download-stego/<token>")
+def download_stego(token):
+    raw = STEGO_FILES.pop(token, None)
+    if raw is None:
+        return render_template(
+            "index.html",
+            error="The stego file is no longer available. Please embed the message again."
         )
-    except Exception as e:
-        return render_template("index.html", error=f"Download failed: {e}")
+
+    return send_file(
+        BytesIO(raw),
+        mimetype="image/png",
+        as_attachment=True,
+        download_name="stego.png"
+    )
 
 
 @app.route("/extract", methods=["POST"])
