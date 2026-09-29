@@ -1,0 +1,6 @@
+Flask
+gunicorn
+opencv-python-headless
+numpy
+pycryptodome
+scikit-image
