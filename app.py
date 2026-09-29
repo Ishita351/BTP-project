@@ -54,7 +54,13 @@ def embed():
 
         # Step 1: cover image + edge map metadata
         H, W = cover.shape[:2]
+
+        # Measure Step 1 edge-map computation time.
+        import time
+        edge_start = time.perf_counter()
         edges = E.edge_map(cover)
+        edge_ms = (time.perf_counter() - edge_start) * 1000
+
         edge_pixels = int(edges.sum())
         total_pixels = H * W
         edge_percent = 100 * edges.mean()
@@ -68,7 +74,6 @@ def embed():
             )
 
         # Step 3: encrypt + embed
-        import time
         start = time.perf_counter()
         stego = E.embed(cover, message.encode(), password)
         embed_ms = (time.perf_counter() - start) * 1000
