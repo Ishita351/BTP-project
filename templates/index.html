@@ -6,112 +6,154 @@
 <title>Edge-Adaptive Image Steganography</title>
 <style>
 * { box-sizing: border-box; }
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #1f2937;
-}
-.container {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 20px;
-}
-h1 { text-align: center; margin-bottom: 8px; }
-.subtitle { text-align: center; color: #6b7280; margin-bottom: 30px; }
-.card {
-    background: white;
-    padding: 25px;
-    border-radius: 14px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 18px rgba(0,0,0,.08);
-}
-h2 { margin-top: 0; }
-label {
-    display: block;
-    font-weight: bold;
-    margin: 15px 0 7px;
-}
-input[type=file], input[type=password], textarea {
-    width: 100%;
-    padding: 11px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-}
-textarea { min-height: 120px; resize: vertical; }
-button {
-    margin-top: 18px;
-    width: 100%;
-    padding: 12px;
-    border: 0;
-    border-radius: 8px;
-    background: #111827;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-}
-button:hover { opacity: .9; }
-.error {
-    background: #fee2e2;
-    color: #991b1b;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-.success {
-    background: #dcfce7;
-    color: #166534;
-    padding: 12px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-}
-.note { color: #6b7280; font-size: 14px; margin-top: 8px; }
+body { margin:0; font-family:Arial,sans-serif; background:#f4f6f8; color:#1f2937; }
+.container { max-width:1000px; margin:35px auto; padding:20px; }
+h1 { text-align:center; margin-bottom:8px; }
+.subtitle { text-align:center; color:#6b7280; margin-bottom:28px; }
+.card { background:#fff; padding:24px; border-radius:14px; margin-bottom:20px; box-shadow:0 4px 18px rgba(0,0,0,.08); }
+h2 { margin-top:0; }
+h3 { margin-bottom:10px; }
+label { display:block; font-weight:bold; margin:14px 0 7px; }
+input[type=file], input[type=password], textarea { width:100%; padding:11px; border:1px solid #d1d5db; border-radius:8px; }
+textarea { min-height:110px; resize:vertical; }
+button { margin-top:16px; width:100%; padding:12px; border:0; border-radius:8px; background:#111827; color:white; font-size:16px; cursor:pointer; }
+button:hover { opacity:.9; }
+.error { background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; margin-bottom:20px; }
+.info { background:#eff6ff; padding:14px; border-radius:8px; margin:12px 0; }
+.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.stat { background:#f8fafc; border:1px solid #e5e7eb; padding:12px; border-radius:8px; }
+.stat strong { display:block; font-size:18px; margin-top:4px; }
+.image-box { margin-top:15px; }
+.image-box img { width:100%; max-height:500px; object-fit:contain; background:#111; border-radius:8px; }
+.montage { max-height:none !important; }
+.success { background:#dcfce7; color:#166534; padding:14px; border-radius:8px; white-space:pre-wrap; }
+.note { color:#6b7280; font-size:14px; }
+.download-button { display:block; margin-top:16px; width:100%; padding:12px; border-radius:8px; background:#166534; color:white; font-size:16px; text-align:center; text-decoration:none; cursor:pointer; }
+@media(max-width:700px){ .grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="container">
-    <h1>Edge-Adaptive Image Steganography</h1>
-    <p class="subtitle">AES-256-GCM encrypted message hiding in image edge pixels</p>
+<h1>Edge-Adaptive Image Steganography</h1>
+<p class="subtitle">AES-256-GCM encrypted message hiding in image edge pixels</p>
 
-    {% if error %}
-    <div class="error">{{ error }}</div>
-    {% endif %}
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
 
-    <div class="card">
-        <h2>1. Embed Secret Message</h2>
-        <form action="/embed" method="POST" enctype="multipart/form-data">
-            <label>Cover Image</label>
-            <input type="file" name="cover" accept=".png,.bmp,.jpg,.jpeg" required>
-            <p class="note">The generated stego image will always be PNG.</p>
+<div class="card">
+<h2>1. Embed Secret Message</h2>
+<form action="/embed" method="POST" enctype="multipart/form-data">
+<label>Cover Image</label>
+<input type="file" name="cover" accept=".png,.bmp,.jpg,.jpeg,.tif,.tiff" required>
+<p class="note">The stego output is always generated as a lossless PNG.</p>
 
-            <label>Secret Message</label>
-            <textarea name="message" placeholder="Enter the message to hide..." required></textarea>
+<label>Secret Message</label>
+<textarea name="message" placeholder="Enter the message to hide..." required></textarea>
 
-            <label>Password</label>
-            <input type="password" name="password" placeholder="Enter encryption password" required>
+<label>Password</label>
+<input type="password" name="password" placeholder="Enter encryption password" required>
+<button type="submit">Encrypt & Embed</button>
+</form>
+</div>
 
-            <button type="submit">Encrypt & Embed</button>
-        </form>
-    </div>
+{% if embed_result %}
+<div class="card">
+<h2>Embedding Results</h2>
 
-    <div class="card">
-        <h2>2. Extract Secret Message</h2>
-        <form action="/extract" method="POST" enctype="multipart/form-data">
-            <label>Stego Image</label>
-            <input type="file" name="stego" accept=".png,.bmp" required>
+<h3>Step 1 — Cover Image & Edge Map</h3>
+<div class="grid">
+<div class="stat">Image size<strong>{{ embed_result.W }} × {{ embed_result.H }}</strong></div>
+<div class="stat">Image type<strong>{{ embed_result.kind }}</strong></div>
+<div class="stat">Edge pixels<strong>{{ embed_result.edge_pixels }} / {{ embed_result.total_pixels }}</strong></div>
+<div class="stat">Edge percentage<strong>{{ "%.1f"|format(embed_result.edge_percent) }}%</strong></div>
+<div class="stat">Edge detection time<strong>{{ "%.1f"|format(embed_result.edge_ms) }} ms</strong></div>
+<div class="stat">Capacity<strong>{{ embed_result.capacity_bits }} bits = {{ embed_result.capacity_bytes }} bytes</strong></div>
+<div class="stat">Fixed crypto overhead<strong>48 bytes</strong></div>
+<div class="stat">Usable message size<strong>{{ embed_result.usable }} bytes</strong></div>
+</div>
 
-            <label>Password</label>
-            <input type="password" name="extract_password" placeholder="Enter password" required>
+<div class="image-box">
+<h3>Edge Map</h3>
+<img src="{{ embed_result.edge_map }}" alt="Edge map">
+</div>
 
-            <button type="submit">Extract & Decrypt</button>
-        </form>
+<h3>Step 3 — Encryption & Embedding</h3>
+<div class="grid">
+<div class="stat">Message length<strong>{{ embed_result.message_length }} bytes</strong></div>
+<div class="stat">Total embed time<strong>{{ "%.1f"|format(embed_result.embed_ms) }} ms</strong></div>
+<div class="stat">Pixel values changed<strong>{{ embed_result.changed }}</strong></div>
+<div class="stat">Maximum change<strong>1 grey level</strong></div>
+</div>
 
-        {% if extracted %}
-        <div class="success" style="margin-top:20px;"><strong>Recovered message:</strong>
+<h3>Step 4 — Edge Map Verification</h3>
+<div class="info">
+Edge map identical before and after embedding:
+<strong>{{ "True" if embed_result.same_edges else "False" }}</strong>
+</div>
 
-{{ extracted }}</div>
-        {% endif %}
-    </div>
+<h3>Step 5 — Visual Comparison & Quality</h3>
+<div class="image-box">
+<h3>Montage: Cover | Edge Map | Stego | Changed Pixels</h3>
+<img class="montage" src="{{ embed_result.montage }}" alt="Embedding montage">
+</div>
+
+<div class="grid" style="margin-top:15px">
+<div class="stat">MSE<strong>{{ "%.6f"|format(embed_result.mse) }}</strong></div>
+<div class="stat">PSNR<strong>{{ "%.2f"|format(embed_result.psnr) }} dB</strong></div>
+<div class="stat">SSIM<strong>{{ "%.6f"|format(embed_result.ssim) }}</strong></div>
+</div>
+
+<div class="download-form">
+<a href="/download-stego/{{ embed_result.stego_token }}" class="download-button">Download stego.png</a>
+</div>
+<p class="note">Only stego.png is downloadable. The montage is displayed on this page.</p>
+</div>
+{% endif %}
+
+<div class="card">
+<h2>2. Extract Secret Message</h2>
+<form action="/extract" method="POST" enctype="multipart/form-data">
+<label>Stego Image</label>
+<input type="file" name="stego" accept=".png,.bmp" required>
+
+<label>Password</label>
+<input type="password" name="extract_password" placeholder="Enter password" required>
+<button type="submit">Extract & Decrypt</button>
+</form>
+</div>
+
+{% if extract_result %}
+<div class="card">
+<h2>Extraction Results</h2>
+
+<h3>Step 2 — Recompute Edge Map</h3>
+<div class="grid">
+<div class="stat">Image size<strong>{{ extract_result.W }} × {{ extract_result.H }}</strong></div>
+<div class="stat">Image type<strong>{{ extract_result.kind }}</strong></div>
+<div class="stat">Edge pixels<strong>{{ extract_result.edge_pixels }} / {{ extract_result.total_pixels }}</strong></div>
+<div class="stat">Edge percentage<strong>{{ "%.1f"|format(extract_result.edge_percent) }}%</strong></div>
+<div class="stat">Edge detection time<strong>{{ "%.1f"|format(extract_result.edge_ms) }} ms</strong></div>
+<div class="stat">Embedding sites<strong>{{ extract_result.bits }} bits ({{ "%.3f"|format(extract_result.bits_per_pixel) }} bits/pixel)</strong></div>
+</div>
+
+<div class="image-box">
+<h3>Recomputed Edge Map</h3>
+<img src="{{ extract_result.edge_map }}" alt="Recomputed extraction edge map">
+</div>
+
+<h3>Step 3 — Password Check & Decryption</h3>
+<div class="success">
+Authentication tag verified (AES-256-GCM).
+Extraction + decryption time: {{ "%.1f"|format(extract_result.extract_ms) }} ms
+<br>Message length: {{ extract_result.message_length }} bytes
+</div>
+
+<h3>Recovered Message</h3>
+<div class="info">{{ extract_result.message }}</div>
+</div>
+{% endif %}
+
 </div>
 </body>
 </html>
